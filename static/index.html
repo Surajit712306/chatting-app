@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+        <title>Live Chatting App</title>
+        <script src="/socket.io/socket.io.js"></script>
+        <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200&display=swap" rel="stylesheet">
+        <style type="text/css">
+            * 
+            {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            .chat__room__wrapper 
+            {
+                padding: 10px;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .chat__room 
+            {
+                padding: 10px;
+                box-shadow: 0 0 4px rgba(0,0,0,0.3); 
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                max-height: calc(100vh - 20px);
+            }
+
+            .messages 
+            {
+                flex: 1;
+                overflow-y: scroll;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .messages::-webkit-scrollbar
+            {
+                display: none;
+                scrollbar-width: 0;
+            }
+
+            .message__date 
+            {
+                background-color: rgb(166, 220, 241);
+                padding: 10px;
+                margin: 5px;
+                min-width: 200px;
+                width: 20%;
+                border-radius: 5px;
+                text-align: center;
+                align-self: center;
+                position: sticky;
+                top: 5px;
+                z-index: 10;
+            }
+
+            .message 
+            {
+                padding: 5px;
+                background-color: rgb(116, 78, 9);
+                color: white;
+                border-radius: 5px;
+                width: 40%;
+                font-family: 'Source Sans Pro', sans-serif;
+                margin-bottom: 10px;
+            }
+
+            .message__header 
+            {
+                background-color: rgb(173, 56, 10);
+                font-size: 16px;
+                font-weight: bold;
+                padding: 5px;
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+            }
+
+            .message__body 
+            {
+                padding: 5px;
+            }
+
+            .message__footer 
+            {
+                text-align: right;
+            }
+
+            .message.self 
+            {
+                align-self: flex-end;
+                background-color: rgb(132, 85, 194);
+                color: white;
+            }
+
+            .message.self .message__header 
+            {
+                background-color: rgb(17, 17, 192);
+            }
+
+            .input__group 
+            {
+                display: flex;
+            }
+
+            .input__message 
+            {
+                flex: 1;
+                border: none;
+                outline: none;
+                border-bottom: 2px solid rgb(5, 141, 28);
+            }
+
+            .input__message:focus 
+            {
+                border-bottom: 2px solid rgb(132, 85, 194);
+            }
+
+            .send__btn 
+            {
+                border: none;
+                outline: none;
+                cursor: pointer;
+                padding: 10px;
+                border-radius: 3px;
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 16px;
+            }
+
+            .send__btn.ready 
+            {
+                background-color: blue;
+                color: white;
+            }
+
+            .send__btn.ready:hover, .send__btn.ready:active 
+            {
+                background-color: rgb(14, 14, 161);
+            }
+
+            .send__btn.ready:active 
+            {
+                outline: 1px solid rgb(20, 20, 201);
+            } 
+
+            .user__connected
+            {
+                padding: 10px;
+                background-color: chartreuse;
+                border-radius: 5px;
+                min-width: 200px;
+                width: 40%;
+                align-self: center;
+                margin: 10px;
+            }
+
+            .user__disconnected
+            {
+                padding: 10px;
+                background-color: rgb(248, 208, 135);
+                border-radius: 5px;
+                min-width: 200px;
+                width: 40%;
+                align-self: center;
+                margin: 10px;
+            }
+
+
+        </style>
+    </head>
+    <body>
+        <noscript>Enable javascript engine</noscript>
+        <div id="root">
+            <main class="chat__room__wrapper">
+                <div class="chat__room">
+                    <div class="messages">
+                        
+                    </div>
+                    <div class="message__input">
+                        <form class="message__form">
+                            <div class="input__group">
+                                <input type="text" name="message" class="input__message" autocomplete="off" placeholder="Enter some message..." autofocus/>
+                                <input type="submit" value="Send" class="send__btn" disabled />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+        <script type="text/javascript">
+            window.onload = function(e){
+
+                // websocket related stuff
+                const socket = io();
+            
+                socket.on('connect_error', err => {
+                    console.log(err.message);
+                });
+
+            
+
+  
+                // logic related stuff
+                let name = window.prompt("Enter your name: ");
+                while(!name)
+                {
+                    name = window.prompt("Enter your name: ");
+                }
+
+                socket.emit("user-connected", {
+                    name,
+                    time: new Date()
+                });
+
+                socket.on('user-connected', user => {
+                    const userElem = document.createElement("div");
+                    userElem.innerText = `${user.name} is connected. ${getTime(new Date(user.time))}`;
+                    userElem.classList.add("user__connected");
+                    messages.appendChild(userElem);
+                });
+
+                socket.on('user-disconnected', user => {
+                    const userElem = document.createElement("div");
+                    userElem.innerText = `${user.name} is disconnected. ${getTime(new Date(user.time))}`;
+                    userElem.classList.add("user__disconnected");
+                    messages.appendChild(userElem);
+                });
+
+                const messageForm = document.querySelector(".message__form");
+                const messageInput = document.querySelector('.input__message');
+                const sendBtn = document.querySelector(".send__btn");
+                const messages = document.querySelector(".messages");
+                
+                function getDate(time)
+                {
+                    const date = time.getDate();
+                    const month = time.getMonth();
+                    const year = time.getFullYear();
+
+                    const strDate = `${date}/${month}/${year}`;
+                    return strDate;
+                }
+
+                function addDate()
+                {
+                    const strDate = getDate(new Date());
+                    const dateElem = document.createElement("div");
+                    dateElem.classList.add("message__date");
+                    dateElem.innerText = strDate;
+                    messages.appendChild(dateElem);
+                }
+
+                addDate();
+
+
+                function getTime(time)
+                {
+                    let hours = time.getHours();
+                    let minutes = time.getMinutes();
+                    const ampm = hours > 12 ? 'pm': 'am';
+                    hours = hours % 12;
+                    hours = hours ? hours: 12;
+                    hours = hours.toString().length == 1 ? `0${hours}`: `${hours}`;
+                    minutes = minutes.toString().length == 1 ? `0${minutes}`: `${minutes}`;
+                    const strTime  = `${hours}:${minutes} ${ampm}`;
+                    return strTime;
+                }
+
+
+                messageInput.addEventListener('input', function(e){
+                    if(e.target.value)
+                    {
+                        sendBtn.classList.add("ready");
+                        sendBtn.removeAttribute("disabled");
+                    }
+                    else 
+                    {
+                        sendBtn.classList.remove("ready");
+                        sendBtn.setAttribute("disabled", true);
+                    }
+                });
+                
+
+                messageForm.addEventListener("submit", function(e){
+                    e.preventDefault();
+                    const messageBody = messageInput.value;
+
+                    messageInput.value = "";
+                    sendBtn.classList.remove("ready");
+                    sendBtn.setAttribute("disabled", true);
+
+                    const message = {
+                        name,
+                        messageBody,
+                        time: new Date()
+                    };
+                    addMessage(message);
+                    socket.emit("send-message", message);
+                    messageInput.focus();
+
+                    const lastMessage = document.querySelector('.messages .message:last-of-type');
+                    lastMessage.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+
+                });
+
+                socket.on('receive-message', message => {
+                    addMessage(message);
+                });
+
+                function addMessage(message)
+                {
+                    const dateElems = messages.querySelectorAll('.message__date');
+                    const dateElem = dateElems[dateElems.length - 1];
+                    const prevStrDate = dateElem.innerText;
+                    const nextStrDate = getDate(new Date());
+                    
+                    if(prevStrDate !== nextStrDate)
+                    {
+                        addDate();
+                    }
+
+                    const messageElem = document.createElement("div");
+                    messageElem.classList.add("message");
+
+                    const messageHeader = document.createElement("div");
+                    messageHeader.classList.add("message__header");
+                    messageHeader.innerText = message.name;
+
+                    const messageBody = document.createElement("div");
+                    messageBody.classList.add("message__body");
+                    messageBody.innerText = message.messageBody;
+
+                    const messageFooter = document.createElement("div");
+                    messageFooter.classList.add("message__footer");
+                    messageFooter.innerText = getTime(new Date(message.time));
+
+                    messageElem.appendChild(messageHeader);
+                    messageElem.appendChild(messageBody);
+                    messageElem.appendChild(messageFooter);
+
+                    messages.appendChild(messageElem);
+
+                    if(message.name === name)
+                    {
+                        messageElem.classList.add("self");
+                    }
+
+                    const lastMessage = document.querySelector('.messages .message:last-of-type');
+                    lastMessage.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+    
+            }
+        </script>
+    </body>
+</html>

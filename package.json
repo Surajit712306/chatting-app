@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "helmet": "^4.2.0",
+    "peer": "^0.6.1",
+    "socket.io": "^3.0.4",
+    "stripe": "^8.128.0",
+    "web-push": "^3.4.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.6"
+  }
+}
