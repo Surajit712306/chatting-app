@@ -225,6 +225,11 @@
                     userElem.innerText = `${user.name} is connected. ${getTime(new Date(user.time))}`;
                     userElem.classList.add("user__connected");
                     messages.appendChild(userElem);
+
+                    const lastUserElem = document.querySelector('.messages .user__connected:last-of-type');
+                    lastUserElem.scrollIntoView({
+                        behavior: 'smooth'
+                    });
                 });
 
                 socket.on('user-disconnected', user => {
@@ -232,6 +237,11 @@
                     userElem.innerText = `${user.name} is disconnected. ${getTime(new Date(user.time))}`;
                     userElem.classList.add("user__disconnected");
                     messages.appendChild(userElem);
+
+                    const lastUserElem = document.querySelector('.messages .user__disconnected:last-of-type');
+                    lastUserElem.scrollIntoView({
+                        behavior: 'smooth'
+                    });
                 });
 
                 const messageForm = document.querySelector(".message__form");
